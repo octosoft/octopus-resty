@@ -3,38 +3,62 @@
     Octosoft octo_collect upload server for Octoscan2
     (c) 2019 Octosoft AG, CH6312 Steinahusen, Switzerland
 
-    This script builds a simple upload service for transfer transfer 
-    of .scan files from the Octoscan2 built in uploader - or from curl 
-    for open platforms
+    This script builds a minimalistic upload service for transfer  
+    of .scan files from the Octoscan2 built-in uploader 
+    or from curl for open platforms
 
-    calling configuration must set the $store_path variable
+    calling configuration must set the $octo_collect_store_path variable
+    to point to the directory where uploaded files should be stored
+
+    for more information see:
+    https://github.com/openresty/lua-resty-upload
+
+    some ideas taken from:
+    https://www.yanxurui.cc/posts/server/2017-03-21-NGINX-as-a-file-server/
 
 --]]
 
+-- in case someone is doing a nosy GET request on us:
+if ngx.var.request_method == "GET" then
+    ngx.say("octo_collect upload server running - " .. os.date('%Y-%m-%d %H:%M:%S'))
+    return
+end
+
+-- requires only standard modules that are distributed with openresty
 local upload = require "resty.upload"
-local cjson = require "cjson"
+-- local cjson = require "cjson"
+
+-- chunk size for multipart upload
 local chunk_size = 1024 * 16
 
--- initialize lua resty upload
-local form, err = upload:new(chunk_size)
+-- pattern to validate upload filename, allow only Octoscan2 .scan files
+local x = "%x"
+local t = { x:rep(8), x:rep(4), x:rep(4), x:rep(4), x:rep(12) }
+local valid_file_name_pattern = table.concat(t, '%-') .. "%.sca."
 
+-- these variables hold information about the uploading file 
 local file
 local file_path
 local file_name
 local file_uploaded
+
+-- initialize lua resty.upload
+local form, err = upload:new(chunk_size)
 
 if not form then
     ngx.log(ngx.ERR, "failed to new upload: ", err)
     ngx.exit(500)
 end
 
-form:set_timeout(5000) -- 5 sec
+form:set_timeout(5000) -- 5 sec 
 
+-- in this loop we receive junks from lua resty.upload
 while true do
 
     local typ, res, err = form:read()
     
     if not typ then
+        -- ouch, something went badly wrong
         ngx.status=500
         ngx.say("failed to read: ", err)
         ngx.exit(500)
@@ -42,12 +66,20 @@ while true do
     end
 
     if typ == "header" then
+        -- we received a header, extract the original filename using lua pattern (not regex)
         file_name = string.match(res[2],";%s*filename=\"([^\"]*)\"")
         if file_name then
-            -- ngx.say("filename:", file_name)
-            -- TODO: sanity check on filename
-            file_path = ngx.var.octo_collect_store_path..file_name
+
+            if not string.match(file_name,valid_file_name_pattern) then
+                -- we allow only filenames that conform to the OctoSAM naming convention
+                ngx.status = 403
+                ngx.say("not allowed: ", file_name)
+                ngx.exit(403)
+            end
+            -- build the destination file name
             -- TODO: prevent duplicate uploads, give a clear message on duplicates
+            file_path = ngx.var.octo_collect_store_path..file_name
+            -- windows requires b for binary here
             file = io.open(file_path,"wb+")
             file_uploaded = file_name
             if not file then
@@ -60,21 +92,22 @@ while true do
             end
         end
     elseif typ == "body" then
-        -- get body chunk
+        -- get body chunk and write it to file
         if file then
             file:write(res)
         end
     elseif typ == "part_end" then
-        -- may send multiple parts but only "filename" is accepted
-        -- in the future Octoscan2 may send more information (checksum etc)
+        -- may receive multiple parts but currently, Octoscan2 sends only one and only "filename" is accepted
+        -- in the future Octoscan2 may send more information here (checksum etc)
         if file then
             file:close()
             file=nil
             file_name=nil
         end            
     elseif typ == "eof" then
+        -- end of the multipart post, inform the client
         if file_uploaded then
-            ngx.say(file_uploaded)
+            ngx.say(file_uploaded .. " thank you!")
         end
         break
     else
