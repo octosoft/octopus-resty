@@ -109,8 +109,8 @@ while true do
             if not file then
                 ngx.status = 503
                 -- log file path but return only relative path to sender
-                ngx.log(ngx.ERR, "failed to open stroe for:  ", file_path)
-                ngx.say("failed to open store for ", file_name)
+                ngx.log(ngx.ERR, "failed to open store for:  ", file_path)
+                ngx.say("failed to open store")
                 ngx.exit(503)
                 return
             end
