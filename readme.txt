@@ -1,24 +1,26 @@
 
-Installing OctoSAM octo-collect
-===============================
+OctoSAM octo-collect - a web based collection service for OctoSAM Inventory .scan files
+
+Installing octo-collect
+=======================
 
 NOTE: this is a sample configuration to get the server running with minimal effort.
-Your organizations rules for adding repositories to package managers and for
-running web servers in your network may have different requirements. 
+Your organization may have different requirements and rules for adding repositories 
+to package managers and for running web servers in your network. 
 
 For example, most organizations require https and have policies for certificate handling.
-This is outside the scope of this example. 
-
-Please consult the openresty / nginx documentation for more information.
-
+This is outside the scope of this example configuration.
+Please consult the openresty / nginx documentation for further information on how to
+setup a secure environment.
 
 
 Installing octo-collect on Windows (for testing only)
 =====================================================
 
-NOTE: while it is possible to run openresty on windows using a service wrapper such as SRVANY,
-we do not recommend nor support this configuration. Configuration of openresty
-as a service under Windows is outside the scope of this sample.
+NOTE: while it is possible to run openresty on windows using a service wrapper,
+we do not recommend this configuration. 
+Configuration of openresty as a service under Windows is outside the scope of this example.
+
 
 - download openresty from http://openresty.org/en/download.html extract the .zip archive to your harddrive
 
@@ -29,14 +31,16 @@ as a service under Windows is outside the scope of this sample.
 - copy nginx.conf to c:\tools\octo_collect\conf
 - copy octo-collect.lua to c:\tools\octo_collect\conf\lua
 
-- start openresty
+- start openresty pointing to your configuration directory (prefix option)
+
     C:\tools\openresty-1.13.6.2-win64>nginx -p c:\tools\octo_collect
 
 - stop openresty
+
     C:\scan>taskkill /IM nginx.exe /F
 
 
-testing the service
+Testing the service
 -------------------
     
     C:\Users\Erwin>curl http://localhost:8080
@@ -51,8 +55,8 @@ Octoscan2 configuration for this example:
 
     UploadInsecure = true
     UploadPlainHttp = true
-    UploadHosts = 10.0.0.112
-    UploadPort = 80
+    UploadHosts = localhost
+    UploadPort = 8080
     UploadUrl = /upload/
 
 
@@ -86,14 +90,6 @@ Installing octo-collect on ubuntu:
     sudo systemctl start openresty
 
 
-- install octo_collect
-
-# your default configuration is under /usr/local/openresty/nginx/conf
-
-#
-# default configuration for octo-collect:
-#
-
 - copy octo-collect.lua     to  /usr/local/openresty/nginx/conf/lua         (you may have to create the lua directory)
 
 - edit nginx.conf to add a location to the server where the octo-collect service should be located:
@@ -113,13 +109,13 @@ Installing octo-collect on ubuntu:
 
 
 
-testing the service
+Testing the service
 -------------------
 
     curl http://localhost/upload/
     OctoSAM octo_collect upload server running - 2019-05-06 10:36:03
 
-    curl -F "upload=@506fd54d-834c-429a-b018-eed77a888906.scan" http://10.0.0.112/upload/
+    curl -F "upload=@506fd54d-834c-429a-b018-eed77a888906.scan" http://<your-hostname-or-ip-address>/upload/
     506fd54d-834c-429a-b018-eed77a888906.scan thank you!
 
 
@@ -128,7 +124,7 @@ Octoscan2 configuration for this example:
 
 UploadInsecure = true
 UploadPlainHttp = true
-UploadHosts = 10.0.0.112
+UploadHosts = <your-hostname-or-ip-address>
 UploadPort = 80
 UploadUrl = /upload/
 
