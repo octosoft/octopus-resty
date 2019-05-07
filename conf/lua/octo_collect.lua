@@ -51,6 +51,7 @@ local valid_file_name_pattern = table.concat(t, '%-') .. "%.sca."
 -- these variables hold information about the uploading file 
 local file
 local file_path
+local file_path_uploading
 local file_name
 local file_uploaded
 local field_name
@@ -100,16 +101,26 @@ while true do
             end
 
             -- build the destination file name
-            -- at the moment we do not prevent duplicates here
             -- OctoSAM import detects duplicate .scan files on their content
             file_path = ngx.var.octo_collect_store_path .. file_name
+
+            -- check for duplicate (already uploaded file) -- possible (if rare race) condiition here
+            local f = io.open(file_path,"r")
+            if f ~= nil then
+                f:close()
+                ngx.status = 303
+                ngx.say("already uploaded")
+                ngx.exit(303)
+            end
+
+            file_path_uploading = file_path .. ".uploading"
             -- windows requires b for binary here
-            file = io.open(file_path, "wb+")
+            file = io.open(file_path_uploading, "wb+")
             file_uploaded = file_name
             if not file then
                 ngx.status = 503
                 -- log file path but return only relative path to sender
-                ngx.log(ngx.ERR, "failed to open store for:  ", file_path)
+                ngx.log(ngx.ERR, "failed to open store for:  ", file_path_uploading)
                 ngx.say("failed to open store")
                 ngx.exit(503)
                 return
@@ -124,7 +135,11 @@ while true do
         if file then
             file:close()
             file = nil
+            os.rename(file_path_uploading,file_path)
+            file_path = nil
+            file_path_uploading=nil
             file_name = nil
+
         end
     elseif typ == "eof" then
         -- end of the multipart post, inform the client
