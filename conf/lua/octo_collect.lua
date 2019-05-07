@@ -18,14 +18,11 @@
     we reject files that are not conforming to OctoSAM naming, also the
     parameter must be called 'upload'.
 
+    in case of duplicate post of the same filename we return HTTP status 303
+
     test:
 
     $ curl -F "upload=@506fd54d-834c-429a-b018-eed77a888906.scan" localhost:8080
-
-    to consider if you are new to Lua:
-
-    * lua indices start with 1 
-    * lua patterns are not regular expressions
 
 --]] 
 
@@ -105,6 +102,8 @@ while true do
             file_path = ngx.var.octo_collect_store_path .. file_name
 
             -- check for duplicate (already uploaded file) -- possible (if rare race) condiition here
+            -- Octoscan2 knows about HTTP Status 303
+            -- also the OctoSAM import service recognizes duplicate files on their content - not only on the name
             local f = io.open(file_path,"r")
             if f ~= nil then
                 f:close()
@@ -113,6 +112,7 @@ while true do
                 ngx.exit(303)
             end
 
+            -- upload to a temp name
             file_path_uploading = file_path .. ".uploading"
             -- windows requires b for binary here
             file = io.open(file_path_uploading, "wb+")
@@ -135,6 +135,8 @@ while true do
         if file then
             file:close()
             file = nil
+            -- rename after upload is complete, this allows the copy job to ignore files that are not
+            -- completely uploaded yet (but can also select on timestamps of course)
             os.rename(file_path_uploading,file_path)
             file_path = nil
             file_path_uploading=nil
