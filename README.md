@@ -13,6 +13,58 @@ For example, most organizations require https and have policies for certificate 
 This is outside the scope of this example configuration.
 Please consult the [openresty](https://openresty.org) / [nginx](https://nginx.org) documentation for further information on how to setup a secure environment.
 
+### Installing octo-collect on Linux
+
+- see <http://openresty.org/en/linux-packages.html> on how to install openresty for your distribution
+
+- Use systemctl to start/stop the service
+
+```bash
+    sudo systemctl stop openresty
+    sudo systemctl start openresty
+```
+
+- copy octo-collect.lua to /usr/local/openresty/nginx/conf/lua (you may have to create the lua directory)
+
+- edit nginx.conf to add a location to the server where the octo-collect service should be located:
+
+```nginx
+
+    location /upload/ {
+            client_max_body_size 200M;
+            #
+            # configure path where the collect module should store uploaded .scan files
+            # this directory must exist and must be writable
+            # don't forget the trailing slash
+            #
+            set $octo_collect_store_path "/tmp/";
+
+            # call the octo_collect handler
+            content_by_lua_file conf/lua/octo_collect.lua;
+        }
+
+```
+
+#### Testing the service
+
+```bash
+    curl http://localhost/upload/
+    OctoSAM octo_collect upload server running - 2019-05-06 10:36:03
+
+    curl -F "upload=@506fd54d-834c-429a-b018-eed77a888906.scan" http://<your-hostname-or-ip-address>/upload/
+    506fd54d-834c-429a-b018-eed77a888906.scan thank you!
+```
+
+#### Octoscan2 configuration for this example:
+
+```properties
+UploadInsecure = true
+UploadPlainHttp = true
+UploadHosts = <your-hostname-or-ip-address>
+UploadPort = 80
+UploadUrl = /upload/
+```
+
 ### Installing octo-collect on Windows (for Testing Only)
 
 Configuration of openresty as a service under Windows is outside the scope of this example.
@@ -68,54 +120,3 @@ Configuration of openresty as a service under Windows is outside the scope of th
     UploadUrl = /upload/
 ```
 
-### Installing octo-collect on Linux
-
-- see <http://openresty.org/en/linux-packages.html> on how to install openresty for your distribution
-
-- Use systemctl to start/stop the service
-
-```bash
-    sudo systemctl stop openresty
-    sudo systemctl start openresty
-```
-
-- copy octo-collect.lua to /usr/local/openresty/nginx/conf/lua (you may have to create the lua directory)
-
-- edit nginx.conf to add a location to the server where the octo-collect service should be located:
-
-```nginx
-
-    location /upload/ {
-            client_max_body_size 200M;
-            #
-            # configure path where the collect module should store uploaded .scan files
-            # this directory must exist and must be writable
-            # don't forget the trailing slash
-            #
-            set $octo_collect_store_path "/tmp/";
-
-            # call the octo_collect handler
-            content_by_lua_file conf/lua/octo_collect.lua;
-        }
-
-```
-
-#### Testing the service
-
-```bash
-    curl http://localhost/upload/
-    OctoSAM octo_collect upload server running - 2019-05-06 10:36:03
-
-    curl -F "upload=@506fd54d-834c-429a-b018-eed77a888906.scan" http://<your-hostname-or-ip-address>/upload/
-    506fd54d-834c-429a-b018-eed77a888906.scan thank you!
-```
-
-#### Octoscan2 configuration for this example:
-
-```properties
-UploadInsecure = true
-UploadPlainHttp = true
-UploadHosts = <your-hostname-or-ip-address>
-UploadPort = 80
-UploadUrl = /upload/
-```
