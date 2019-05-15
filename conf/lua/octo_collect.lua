@@ -91,7 +91,7 @@ while true do
 
             field_name = string.match(res[2],";%s*name=\"([^\"]*)\"" )
             if not string.match(field_name,"upload.*") then
-                -- accept only a form field called "upload"
+                -- accept only a form field called "upload" (uploaded too for legacy reasons)
                 ngx.status = 403
                 ngx.say("not allowed")
                 ngx.exit(403)
