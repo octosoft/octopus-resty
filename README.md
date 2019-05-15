@@ -1,7 +1,7 @@
 
 # OctoSAM octo-collect
 
-A web based upload server for OctoSAM Inventory scan files.
+A web based upload server for [OctoSAM Inventory](https://www.octosoft.ch) scan files.
 
 ## Installing octo-collect
 
@@ -68,33 +68,9 @@ Configuration of openresty as a service under Windows is outside the scope of th
     UploadUrl = /upload/
 ```
 
+### Installing octo-collect on Linux
 
-### Installing octo-collect on debaian / ubuntu:
-
-- add the openresty repository to your package manager
-
-```bash
-
-    wget -qO - https://openresty.org/package/pubkey.gpg | sudo apt-key add -
-
-    sudo apt-get -y install software-properties-common
-
-    sudo add-apt-repository -y "deb http://openresty.org/package/ubuntu $(lsb_release -sc) main"
-```
-
-- update the package list
-
-```bash
-    sudo apt-get update
-```
-
-- install openresty
-
-```bash
-    sudo apt-get install openresty
-```
-
-openresty should be installed an running now, connect with your browser, you should see the openresty start page
+- see <http://openresty.org/en/linux-packages.html> on how to install openresty for your distribution
 
 - Use systemctl to start/stop the service
 
