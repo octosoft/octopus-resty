@@ -1,7 +1,7 @@
 
 # OctoSAM octo-collect
 
-A web based upload service for OctoSAM Inventory scan files.
+A web based upload server for OctoSAM Inventory scan files.
 
 ## Installing octo-collect
 
